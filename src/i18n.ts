@@ -23,6 +23,7 @@ const it = {
     ctaPrimary: 'Commissiona un’opera',
     ctaSecondary: 'Guarda le opere',
     badge: 'DISEGNI SUL VETRO ✦ FATTO A MANO ✦ ',
+    tag: 'disegni sul vetro',
     scroll: 'Scorri'
   },
   marquee: ['Disegni sul vetro', 'Anime', 'Manga', 'Segnalibri', 'Pezzi unici', 'Su commissione'],
@@ -47,7 +48,7 @@ const it = {
     kicker: '02 — Galleria',
     title: 'I personaggi che respirano sul vetro',
     text: "Sul vetro, il pennello intreccia il silenzio, dove il tratto non è solo mano, ma pensiero che prende forma. Ogni disegno è un respiro sospeso tra il mondo e l'idea, un'anima che nasce dal nulla, intrappolata nel cristallo.",
-    hint: 'Trascina o scorri',
+    hint: 'Scorri per esplorare',
     cta: 'Vuoi vedere il tuo personaggio preferito prendere vita sul vetro?',
     ctaLink: 'Contattami',
     alt: 'Disegno su vetro di un personaggio anime'
@@ -122,6 +123,7 @@ const en: Dict = {
     ctaPrimary: 'Commission a piece',
     ctaSecondary: 'See the work',
     badge: 'GLASS DRAWINGS ✦ HANDMADE ✦ ',
+    tag: 'drawings on glass',
     scroll: 'Scroll'
   },
   marquee: ['Glass drawings', 'Anime', 'Manga', 'Bookmarks', 'One of a kind', 'Made to order'],
@@ -146,7 +148,7 @@ const en: Dict = {
     kicker: '02 — Gallery',
     title: 'Characters who breathe on glass',
     text: 'On the glass, the brush weaves silence, where the stroke is not just a hand, but a thought taking shape. Each drawing is a breath suspended between the world and the idea, a soul born from nothing, trapped in the crystal.',
-    hint: 'Drag or scroll',
+    hint: 'Scroll to explore',
     cta: 'Want to see your favourite character come to life on glass?',
     ctaLink: 'Contact me',
     alt: 'Glass drawing of an anime character'

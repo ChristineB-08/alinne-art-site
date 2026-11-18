@@ -5,7 +5,6 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 
-import Aurora from './components/rb/Aurora';
 import SplitText from './components/rb/SplitText';
 import ScrollVelocity from './components/rb/ScrollVelocity';
 import ScrollFloat from './components/rb/ScrollFloat';
@@ -14,6 +13,7 @@ import TiltedCard from './components/rb/TiltedCard';
 import Magnet from './components/rb/Magnet';
 import ClickSpark from './components/rb/ClickSpark';
 import { bookmarks, characters, dict, social, type Lang } from './i18n';
+import { processArt, Squiggle } from './Illustrations';
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -184,84 +184,144 @@ function Nav({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
 }
 
 /* ---------------- hero ---------------- */
+const heroColumns = [
+  ['/img/personaggio1.jpg', '/img/background4.jpg', '/img/personaggio5.jpg', '/img/personaggio9.jpg'],
+  ['/img/personaggio2.jpg', '/img/personaggio7.jpg', '/img/background1.jpg', '/img/personaggio10.jpg'],
+  ['/img/personaggio3.jpg', '/img/personaggio8.jpg', '/img/background3.jpg', '/img/personaggio11.jpg'],
+  ['/img/personaggio4.jpg', '/img/background2.jpg', '/img/personaggio6.jpg', '/img/personaggio12.jpg'],
+  ['/img/personaggio12.jpg', '/img/personaggio9.jpg', '/img/background4.jpg', '/img/personaggio2.jpg']
+];
+
 function Hero({ lang, ready }: { lang: Lang; ready: boolean }) {
   const t = dict[lang].hero;
   const root = useRef<HTMLElement>(null);
 
   useGSAP(
     () => {
-      if (!ready) return;
+      const el = root.current!;
       const rm = reducedMotion();
+      const small = window.matchMedia('(max-width: 899px)').matches;
+      const lens = { x: window.innerWidth / 2, y: window.innerHeight * 0.55, r: 0 };
+      const apply = () => {
+        el.style.setProperty('--mx', `${lens.x}px`);
+        el.style.setProperty('--my', `${lens.y}px`);
+        el.style.setProperty('--r', `${lens.r}px`);
+      };
+      apply();
+      if (!ready) return;
+
+      const radius = () => Math.max(window.innerWidth, window.innerHeight) * (small ? 0.26 : 0.17);
       const tl = gsap.timeline({ defaults: { ease: 'expo.out' } });
-      tl.from('.hero__eyebrow', { y: 20, autoAlpha: 0, duration: 1 }, 0.3)
-        .from('.hero__sub', { y: 24, autoAlpha: 0, duration: 1 }, 0.9)
-        .from('.hero__actions > *', { y: 24, autoAlpha: 0, duration: 1, stagger: 0.1 }, 1)
-        .from('.hero__art', { y: 160, rotate: (i: number) => [-14, 10, -6][i] ?? 0, autoAlpha: 0, duration: 1.6, stagger: 0.12 }, 0.2)
-        .from('.hero__badge', { scale: 0, rotate: -120, duration: 1.4 }, 0.8)
-        .from('.hero__scroll', { autoAlpha: 0, duration: 1 }, 1.3);
+      tl.fromTo('.mosaic__col', { yPercent: (i: number) => (i % 2 ? -12 : 12), autoAlpha: 0 }, { yPercent: 0, autoAlpha: 1, duration: 1.8, stagger: 0.08 }, 0)
+        .fromTo(lens, { r: 0 }, { r: radius, duration: 1.8, onUpdate: apply }, 0.4)
+        .fromTo('.hero__pill', { y: 20, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 1 }, 0.3)
+        .fromTo('.hero__tag', { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: 1.4, ease: 'power2.inOut' }, 1)
+        .fromTo('.hero__sub', { y: 24, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 1 }, 1.1)
+        .fromTo('.hero__actions > *', { y: 24, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 1, stagger: 0.1 }, 1.2)
+        .fromTo('.hero__badge', { scale: 0, rotate: -90 }, { scale: 1, rotate: 0, duration: 1.4 }, 1.3);
 
       if (rm) return;
 
-      // scroll parallax
-      gsap.utils.toArray<HTMLElement>('.hero__art').forEach((el, i) => {
-        gsap.to(el, {
-          yPercent: [-30, -55, -15][i] ?? -20,
+      // the "glass lens": follows the pointer on desktop, drifts on its own on touch screens
+      const toX = gsap.quickTo(lens, 'x', { duration: 0.9, ease: 'power3', onUpdate: apply });
+      const toY = gsap.quickTo(lens, 'y', { duration: 0.9, ease: 'power3', onUpdate: apply });
+      let idle: gsap.core.Tween | null = null;
+      const drift = () => {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const p = { a: 0 };
+        idle = gsap.to(p, {
+          a: Math.PI * 2,
+          duration: small ? 14 : 18,
           ease: 'none',
-          scrollTrigger: { trigger: root.current, start: 'top top', end: 'bottom top', scrub: true }
-        });
-      });
-      gsap.to('.hero__title', {
-        yPercent: 25,
-        autoAlpha: 0.2,
-        ease: 'none',
-        scrollTrigger: { trigger: root.current, start: 'top top', end: 'bottom top', scrub: true }
-      });
-
-      // mouse parallax
-      const arts = gsap.utils.toArray<HTMLElement>('.hero__art-inner');
-      const movers = arts.map(el => ({
-        x: gsap.quickTo(el, 'x', { duration: 1.2, ease: 'power3' }),
-        y: gsap.quickTo(el, 'y', { duration: 1.2, ease: 'power3' })
-      }));
-      const onMove = (e: PointerEvent) => {
-        const nx = e.clientX / window.innerWidth - 0.5;
-        const ny = e.clientY / window.innerHeight - 0.5;
-        movers.forEach((m, i) => {
-          const d = (i + 1) * 14;
-          m.x(nx * d);
-          m.y(ny * d);
+          repeat: -1,
+          onUpdate: () => {
+            toX(w / 2 + Math.sin(p.a) * w * (small ? 0.3 : 0.32));
+            toY(h * 0.5 + Math.sin(p.a * 2) * h * (small ? 0.28 : 0.22));
+          }
         });
       };
-      window.addEventListener('pointermove', onMove);
-      return () => window.removeEventListener('pointermove', onMove);
+      const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      let onMove: ((e: PointerEvent) => void) | undefined;
+      if (fine) {
+        onMove = (e: PointerEvent) => {
+          const r = el.getBoundingClientRect();
+          if (e.clientY > r.bottom) return;
+          idle?.kill();
+          idle = null;
+          toX(e.clientX - r.left);
+          toY(e.clientY - r.top);
+        };
+        window.addEventListener('pointermove', onMove, { once: false });
+        const startX = lens.x;
+        gsap.delayedCall(2.2, () => {
+          if (!idle && lens.x === startX) drift();
+        });
+      } else {
+        gsap.delayedCall(1.6, drift);
+      }
+
+      // scroll out: the full-screen stage shrinks into a framed pane
+      gsap.to('.hero__stage', {
+        clipPath: small ? 'inset(4% 4% 4% 4% round 28px)' : 'inset(6% 5% 6% 5% round 40px)',
+        ease: 'none',
+        scrollTrigger: { trigger: el, start: 'top top', end: 'bottom top', scrub: true }
+      });
+      gsap.to('.mosaic', {
+        scale: 1.15,
+        ease: 'none',
+        scrollTrigger: { trigger: el, start: 'top top', end: 'bottom top', scrub: true }
+      });
+      gsap.to('.hero__content', {
+        yPercent: -18,
+        autoAlpha: 0,
+        ease: 'none',
+        scrollTrigger: { trigger: el, start: 'top top', end: '70% top', scrub: true }
+      });
+
+      return () => {
+        if (onMove) window.removeEventListener('pointermove', onMove);
+        idle?.kill();
+      };
     },
     { scope: root, dependencies: [ready] }
   );
 
   return (
     <section className="hero" id="top" ref={root}>
-      <div className="hero__aurora" aria-hidden="true">
-        <Aurora colorStops={['#3b1d6e', '#eb5b00', '#ff9a3c']} amplitude={1.1} blend={0.55} speed={0.6} />
+      <div className="hero__stage" aria-hidden="true">
+        <div className="mosaic">
+          {heroColumns.map((col, c) => (
+            <div className={`mosaic__col mosaic__col--${c + 1}`} key={c}>
+              <div className="mosaic__track" style={{ animationDuration: `${46 + c * 7}s` }}>
+                {[...col, ...col].map((src, i) => (
+                  <img key={i} src={src} alt="" loading={i < 3 ? 'eager' : 'lazy'} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="hero__frost" />
+        <div className="hero__lens" />
+        <div className="hero__veil" />
+        <div className="hero__grain" />
       </div>
-      <div className="hero__grain" aria-hidden="true" />
 
       <div className="hero__content">
-        <p className="hero__eyebrow">
+        <p className="hero__pill">
           <span className="dot" /> {t.eyebrow}
         </p>
         <h1 className="hero__title" aria-label="AlinneArt">
           {ready ? (
             <>
-              <SplitText key={`a-${lang}`} text={t.line1} tag="span" className="hero__line" splitType="chars" effect="rise" mask trigger="load" delay={0.04} duration={1.1} hoverEffect="wave" />
-              <SplitText key={`b-${lang}`} text={t.line2} tag="span" className="hero__line hero__line--italic" splitType="chars" effect="flip" trigger="load" delay={0.06} duration={1.2} />
+              <SplitText key={`a-${lang}`} text={t.line1} tag="span" className="hero__word" splitType="chars" effect="rise" mask trigger="load" delay={0.05} duration={1.2} />
+              <SplitText key={`b-${lang}`} text={t.line2} tag="span" className="hero__word hero__word--accent" splitType="chars" effect="flip" trigger="load" delay={0.08} duration={1.2} />
             </>
           ) : (
-            <>
-              <span className="hero__line" style={{ opacity: 0 }}>{t.line1}</span>
-              <span className="hero__line hero__line--italic" style={{ opacity: 0 }}>{t.line2}</span>
-            </>
+            <span style={{ opacity: 0 }}>AlinneArt</span>
           )}
         </h1>
+        <p className="hero__tag">{t.tag}</p>
         <p className="hero__sub">{t.sub}</p>
         <div className="hero__actions">
           <Magnet padding={60} magnetStrength={3} style={{ display: 'flex' }} innerClassName="magnet-inner">
@@ -275,24 +335,10 @@ function Hero({ lang, ready }: { lang: Lang; ready: boolean }) {
         </div>
       </div>
 
-      <div className="hero__gallery" aria-hidden="true">
-        {['/img/background4.jpg', '/img/personaggio7.jpg', '/img/background1.jpg'].map((src, i) => (
-          <div className={`hero__art hero__art--${i + 1}`} key={src}>
-            <div className="hero__art-inner">
-              <img src={src} alt="" />
-            </div>
-          </div>
-        ))}
-        <div className="hero__badge">
-          <CircularText key={lang} text={t.badge} spinDuration={18} onHover="speedUp" size={150} fontSize={13} color="#f4efe2">
-            <img src="/logo.png" alt="" className="hero__badge-logo" />
-          </CircularText>
-        </div>
-      </div>
-
-      <button className="hero__scroll" onClick={() => scrollToId('vetro')}>
-        <span>{t.scroll}</span>
-        <i />
+      <button className="hero__badge" onClick={() => scrollToId('vetro')} aria-label={t.scroll}>
+        <CircularText key={lang} text={t.badge} spinDuration={18} onHover="speedUp" size={128} fontSize={11} color="#f4efe2">
+          <span className="hero__badge-arrow">↓</span>
+        </CircularText>
       </button>
     </section>
   );
@@ -304,6 +350,15 @@ function Kicker({ children }: { children: ReactNode }) {
 }
 
 /* ---------------- glass section ---------------- */
+function drawOnScroll(scope: Element, trigger: Element | string, start = 'top 80%') {
+  const draws = scope.querySelectorAll('.draw');
+  const pops = scope.querySelectorAll('.pop');
+  const tl = gsap.timeline({ scrollTrigger: { trigger, start } });
+  if (draws.length) tl.fromTo(draws, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.2, ease: 'power2.inOut', stagger: 0.12 }, 0);
+  if (pops.length) tl.fromTo(pops, { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: 0.7, ease: 'back.out(2)', stagger: 0.06 }, 0.35);
+  return tl;
+}
+
 function Glass({ lang }: { lang: Lang }) {
   const t = dict[lang].glass;
   const p = dict[lang].process;
@@ -312,84 +367,118 @@ function Glass({ lang }: { lang: Lang }) {
   useGSAP(
     () => {
       if (reducedMotion()) return;
+      const el = root.current!;
+      // video banner opens like a pane of glass
       gsap.fromTo(
-        '.glass__video',
-        { clipPath: 'inset(18% 14% 18% 14% round 28px)' },
+        '.glass__banner',
+        { clipPath: 'inset(10% 12% 10% 12% round 32px)' },
         {
-          clipPath: 'inset(0% 0% 0% 0% round 28px)',
+          clipPath: 'inset(0% 0% 0% 0% round 32px)',
           ease: 'none',
-          scrollTrigger: { trigger: '.glass__media', start: 'top 90%', end: 'center 55%', scrub: true }
+          scrollTrigger: { trigger: '.glass__banner', start: 'top 95%', end: 'center 55%', scrub: true }
         }
       );
-      gsap.fromTo('.glass__video video', { scale: 1.35 }, {
+      gsap.fromTo('.glass__banner video', { scale: 1.3 }, {
         scale: 1,
         ease: 'none',
-        scrollTrigger: { trigger: '.glass__media', start: 'top bottom', end: 'bottom top', scrub: true }
+        scrollTrigger: { trigger: '.glass__banner', start: 'top bottom', end: 'bottom top', scrub: true }
       });
-      // process line draw
-      const path = root.current?.querySelector<SVGPathElement>('.process__line path');
+      // centre phone + side cards
+      gsap.fromTo('.glass__phone', { y: 80, rotate: -4 }, {
+        y: -40,
+        rotate: 3,
+        ease: 'none',
+        scrollTrigger: { trigger: '.glass__trio', start: 'top bottom', end: 'bottom top', scrub: true }
+      });
+      gsap.fromTo('.glass__card', { y: 60, autoAlpha: 0 }, {
+        y: 0,
+        autoAlpha: 1,
+        duration: 1.2,
+        ease: 'expo.out',
+        stagger: 0.15,
+        scrollTrigger: { trigger: '.glass__trio', start: 'top 75%' }
+      });
+      el.querySelectorAll('.squiggle').forEach(s => drawOnScroll(s, s, 'top 85%'));
+      // process illustrations
+      el.querySelectorAll('.process__step').forEach((step, i) => {
+        gsap.fromTo(step, { y: 60, autoAlpha: 0 }, {
+          y: 0,
+          autoAlpha: 1,
+          duration: 1.1,
+          ease: 'expo.out',
+          delay: (i % 4) * 0.08,
+          scrollTrigger: { trigger: step, start: 'top 88%' }
+        });
+        drawOnScroll(step, step, 'top 80%');
+      });
+      const path = el.querySelector<SVGPathElement>('.process__line path');
       if (path) {
-        const len = path.getTotalLength();
-        gsap.set(path, { strokeDasharray: len, strokeDashoffset: len });
-        gsap.to(path, {
+        gsap.fromTo(path, { strokeDashoffset: 1 }, {
           strokeDashoffset: 0,
           ease: 'none',
-          scrollTrigger: { trigger: '.process__grid', start: 'top 80%', end: 'bottom 60%', scrub: true }
+          scrollTrigger: { trigger: '.process__grid', start: 'top 80%', end: 'bottom 70%', scrub: true }
         });
       }
-      gsap.from('.process__step', {
-        y: 60,
-        autoAlpha: 0,
-        stagger: 0.12,
-        duration: 1,
-        ease: 'expo.out',
-        scrollTrigger: { trigger: '.process__grid', start: 'top 78%' }
-      });
     },
     { scope: root, dependencies: [lang] }
   );
 
   return (
-    <section className="section glass" id="vetro" ref={root}>
-      <div className="wrap glass__grid">
-        <div className="glass__text">
-          <Kicker>{t.kicker}</Kicker>
-          <SplitText key={lang} text={t.title} tag="h2" className="h2" splitType="words" effect="blur" textAlign="left" />
-          <p data-reveal>{t.p1}</p>
-          <p data-reveal>{t.p2}</p>
-        </div>
-        <div className="glass__media">
-          <div className="glass__video">
-            <video src="/video/video1.mp4" autoPlay muted loop playsInline preload="metadata" poster="/img/disegno-sul-vetro.jpg" />
-          </div>
-          <div className="glass__phone" data-reveal>
-            <video src="/video/video2.mp4" autoPlay muted loop playsInline preload="metadata" />
-          </div>
-        </div>
+    <section className="section glass light" id="vetro" ref={root}>
+      <div className="wrap center-head">
+        <Kicker>{t.kicker}</Kicker>
+        <SplitText key={lang} text={t.title} tag="h2" className="h2" splitType="words" effect="blur" textAlign="center" />
+        <Squiggle className="center-squiggle" />
       </div>
 
-      <div className="glass__quote wrap">
-        <ScrollFloat key={lang} effect="float" splitBy="chars" textClassName="quote" animationDuration={1} ease="back.inOut(2)" scrollStart="center bottom+=50%" scrollEnd="bottom bottom-=40%" stagger={0.03}>
-          {t.quote}
-        </ScrollFloat>
+      <div className="wrap glass__trio">
+        <article className="glass__card glass__card--left">
+          <span className="glass__card-num">I</span>
+          <p>{t.p1}</p>
+        </article>
+        <div className="glass__phone">
+          <video src="/video/video2.mp4" autoPlay muted loop playsInline preload="metadata" />
+          <span className="glass__shine" />
+        </div>
+        <article className="glass__card glass__card--right">
+          <span className="glass__card-num">II</span>
+          <p>{t.p2}</p>
+        </article>
+      </div>
+
+      <div className="wrap">
+        <div className="glass__banner">
+          <video src="/video/video1.mp4" autoPlay muted loop playsInline preload="metadata" poster="/img/disegno-sul-vetro.jpg" />
+          <div className="glass__banner-quote">
+            <ScrollFloat key={lang} effect="float" splitBy="chars" textClassName="quote" animationDuration={1} ease="back.inOut(2)" scrollStart="top bottom" scrollEnd="center center" stagger={0.03}>
+              {t.quote}
+            </ScrollFloat>
+          </div>
+        </div>
       </div>
 
       <div className="wrap process">
-        <div className="process__head">
+        <div className="center-head">
           <Kicker>{p.kicker}</Kicker>
           <h3 className="h3" data-reveal>{p.title}</h3>
         </div>
         <div className="process__grid">
-          <svg className="process__line" viewBox="0 0 1000 40" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M0 20 C 160 -10, 330 50, 500 20 S 840 -10, 1000 20" />
+          <svg className="process__line" viewBox="0 0 1000 60" preserveAspectRatio="none" aria-hidden="true">
+            <path pathLength={1} d="M60 30 C 180 -10, 300 70, 380 30 S 560 -10, 620 30 S 820 70, 940 30" />
           </svg>
-          {p.steps.map((s, i) => (
-            <article className="process__step" key={s.t}>
-              <span className="process__num">0{i + 1}</span>
-              <h4>{s.t}</h4>
-              <p>{s.d}</p>
-            </article>
-          ))}
+          {p.steps.map((s, i) => {
+            const Art = processArt[i];
+            return (
+              <article className="process__step" key={s.t}>
+                <div className="process__art">
+                  <Art />
+                  <span className="process__num">0{i + 1}</span>
+                </div>
+                <h4>{s.t}</h4>
+                <p>{s.d}</p>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -420,13 +509,15 @@ function Characters({ lang }: { lang: Lang }) {
   const t = dict[lang].characters;
   const root = useRef<HTMLElement>(null);
   const track = useRef<HTMLDivElement>(null);
+  const rowA = characters.slice(0, 6);
+  const rowB = characters.slice(6);
 
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
       mm.add('(min-width: 900px) and (prefers-reduced-motion: no-preference)', () => {
         const el = track.current!;
-        const dist = () => el.scrollWidth - window.innerWidth + 48;
+        const dist = () => el.scrollWidth - window.innerWidth;
         const tween = gsap.to(el, {
           x: () => -dist(),
           ease: 'none',
@@ -441,13 +532,43 @@ function Characters({ lang }: { lang: Lang }) {
           }
         });
         gsap.utils.toArray<HTMLElement>('.chars__card').forEach((card, i) => {
-          gsap.fromTo(card, { y: i % 2 ? 60 : -30, rotate: i % 2 ? 3 : -3 }, {
-            y: i % 2 ? -40 : 30,
+          gsap.fromTo(card, { y: i % 2 ? 50 : -30, rotate: i % 2 ? 3 : -3 }, {
+            y: i % 2 ? -30 : 30,
             rotate: i % 2 ? -2 : 2,
             ease: 'none',
             scrollTrigger: { trigger: card, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true }
           });
         });
+      });
+      // mobile: rows glide on their own, and speed up with scroll velocity
+      mm.add('(max-width: 899px) and (prefers-reduced-motion: no-preference)', () => {
+        const rows = gsap.utils.toArray<HTMLElement>('.chars__row');
+        const loops = rows.map((row, i) =>
+          gsap.fromTo(row, { xPercent: i % 2 ? -50 : 0 }, { xPercent: i % 2 ? 0 : -50, duration: 38, ease: 'none', repeat: -1 })
+        );
+        const settle = gsap.delayedCall(0.25, () => loops.forEach(l => gsap.to(l, { timeScale: 1, duration: 1.2, overwrite: true }))).pause();
+        const st = ScrollTrigger.create({
+          trigger: '.chars__rows',
+          start: 'top bottom',
+          end: 'bottom top',
+          onUpdate: self => {
+            const boost = 1 + Math.min(Math.abs(self.getVelocity()) / 350, 6);
+            loops.forEach(l => gsap.to(l, { timeScale: boost, duration: 0.2, overwrite: true }));
+            settle.restart(true);
+          }
+        });
+        const holder = root.current!.querySelector('.chars__rows')!;
+        const pause = () => loops.forEach(l => gsap.to(l, { timeScale: 0, duration: 0.4, overwrite: true }));
+        const play = () => loops.forEach(l => gsap.to(l, { timeScale: 1, duration: 0.6, overwrite: true }));
+        holder.addEventListener('pointerdown', pause);
+        holder.addEventListener('pointerup', play);
+        holder.addEventListener('pointercancel', play);
+        return () => {
+          st.kill();
+          holder.removeEventListener('pointerdown', pause);
+          holder.removeEventListener('pointerup', play);
+          holder.removeEventListener('pointercancel', play);
+        };
       });
       return () => mm.revert();
     },
@@ -457,13 +578,12 @@ function Characters({ lang }: { lang: Lang }) {
   return (
     <section className="section chars" id="personaggi" ref={root}>
       <div className="chars__pin">
-        <div className="wrap chars__head">
-          <div>
-            <Kicker>{t.kicker}</Kicker>
-            <SplitText key={lang} text={t.title} tag="h2" className="h2" splitType="words" effect="rise" mask textAlign="left" />
-          </div>
-          <p className="chars__intro" data-reveal>{t.text}</p>
+        <div className="wrap center-head chars__head">
+          <Kicker>{t.kicker}</Kicker>
+          <SplitText key={lang} text={t.title} tag="h2" className="h2" splitType="words" effect="rise" mask textAlign="center" />
+          <p className="lead" data-reveal>{t.text}</p>
         </div>
+
         <div className="chars__track" ref={track}>
           {characters.map((src, i) => (
             <div className="chars__card" key={src}>
@@ -483,17 +603,31 @@ function Characters({ lang }: { lang: Lang }) {
               <span className="chars__index">{String(i + 1).padStart(2, '0')}</span>
             </div>
           ))}
-          <div className="chars__end">
-            <p>{t.cta}</p>
-            <a className="btn" href="#contatti" onClick={e => (e.preventDefault(), scrollToId('contatti'))}>
-              {t.ctaLink} <Arrow />
-            </a>
-          </div>
         </div>
+
+        <div className="chars__rows">
+          {[rowA, rowB].map((row, r) => (
+            <div className="chars__row" key={r}>
+              {[...row, ...row].map((src, i) => (
+                <figure className="chars__mini" key={i}>
+                  <img src={src} alt={i < row.length ? `${t.alt} ${r * 6 + i + 1}` : ''} loading="lazy" />
+                </figure>
+              ))}
+            </div>
+          ))}
+        </div>
+
         <div className="wrap chars__foot">
           <span className="chars__hint">{t.hint}</span>
           <div className="chars__progress"><i /></div>
         </div>
+      </div>
+
+      <div className="wrap chars__cta" data-reveal>
+        <p>{t.cta}</p>
+        <a className="btn" href="#contatti" onClick={e => (e.preventDefault(), scrollToId('contatti'))}>
+          {t.ctaLink} <Arrow />
+        </a>
       </div>
     </section>
   );
@@ -503,27 +637,28 @@ function Characters({ lang }: { lang: Lang }) {
 function Bookmarks({ lang }: { lang: Lang }) {
   const t = dict[lang].bookmarks;
   const root = useRef<HTMLElement>(null);
-  const cols = useMemo(() => [0, 1, 2].map(c => bookmarks.filter((_, i) => i % 3 === c)), []);
+  const cols = useMemo(() => [0, 1, 2, 3].map(c => bookmarks.filter((_, i) => i % 4 === c)), []);
 
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
-      mm.add('(min-width: 900px) and (prefers-reduced-motion: no-preference)', () => {
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
         gsap.utils.toArray<HTMLElement>('.bm__col').forEach((col, i) => {
-          gsap.fromTo(col, { yPercent: [8, -6, 14][i] }, {
-            yPercent: [-14, 6, -22][i],
+          gsap.fromTo(col, { yPercent: [10, -4, 14, 0][i] }, {
+            yPercent: [-10, 6, -14, 8][i],
             ease: 'none',
-            scrollTrigger: { trigger: root.current, start: 'top bottom', end: 'bottom top', scrub: true }
+            scrollTrigger: { trigger: '.bm__cols', start: 'top bottom', end: 'bottom top', scrub: true }
           });
         });
-      });
-      gsap.utils.toArray<HTMLElement>('.bm__item').forEach(el => {
-        gsap.fromTo(el, { clipPath: 'inset(100% 0% 0% 0%)' }, {
-          clipPath: 'inset(0% 0% 0% 0%)',
-          duration: 1.2,
-          ease: 'expo.out',
-          scrollTrigger: { trigger: el, start: 'top 92%' }
+        gsap.utils.toArray<HTMLElement>('.bm__item').forEach(el => {
+          gsap.fromTo(el, { clipPath: 'inset(100% 0% 0% 0% round 16px)' }, {
+            clipPath: 'inset(0% 0% 0% 0% round 16px)',
+            duration: 1.2,
+            ease: 'expo.out',
+            scrollTrigger: { trigger: el, start: 'top 95%' }
+          });
         });
+        if (root.current) root.current.querySelectorAll('.squiggle').forEach(s => drawOnScroll(s, s, 'top 85%'));
       });
       return () => mm.revert();
     },
@@ -531,34 +666,33 @@ function Bookmarks({ lang }: { lang: Lang }) {
   );
 
   return (
-    <section className="section bm" id="segnalibri" ref={root}>
-      <div className="wrap bm__grid">
-        <div className="bm__text">
-          <Kicker>{t.kicker}</Kicker>
-          <SplitText key={lang} text={t.title} tag="h2" className="h2" splitType="chars" effect="wave" textAlign="left" />
-          <p data-reveal>{t.text}</p>
-          <ul className="bm__features" data-reveal>
-            {t.features.map(f => (
-              <li key={f}>{f}</li>
-            ))}
-          </ul>
-          <div data-reveal>
-            <a className="btn btn--dark" href="#contatti" onClick={e => (e.preventDefault(), scrollToId('contatti'))}>
-              {t.cta} <Arrow />
-            </a>
-          </div>
-        </div>
-        <div className="bm__cols">
-          {cols.map((col, c) => (
-            <div className="bm__col" key={c}>
-              {col.map(src => (
-                <figure className="bm__item" key={src}>
-                  <img src={src} alt={t.alt} loading="lazy" />
-                </figure>
-              ))}
-            </div>
+    <section className="section bm light" id="segnalibri" ref={root}>
+      <div className="wrap center-head">
+        <Kicker>{t.kicker}</Kicker>
+        <SplitText key={lang} text={t.title} tag="h2" className="h2" splitType="chars" effect="wave" textAlign="center" />
+        <Squiggle className="center-squiggle" />
+        <p className="lead" data-reveal>{t.text}</p>
+        <ul className="bm__features" data-reveal>
+          {t.features.map(f => (
+            <li key={f}>{f}</li>
           ))}
-        </div>
+        </ul>
+      </div>
+      <div className="wrap bm__cols">
+        {cols.map((col, c) => (
+          <div className="bm__col" key={c}>
+            {col.map(src => (
+              <figure className="bm__item" key={src}>
+                <img src={src} alt={t.alt} loading="lazy" />
+              </figure>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="wrap bm__cta" data-reveal>
+        <a className="btn btn--dark" href="#contatti" onClick={e => (e.preventDefault(), scrollToId('contatti'))}>
+          {t.cta} <Arrow />
+        </a>
       </div>
     </section>
   );
@@ -713,18 +847,35 @@ function Contact({ lang }: { lang: Lang }) {
 /* ---------------- footer ---------------- */
 function Footer({ lang }: { lang: Lang }) {
   const t = dict[lang].footer;
+  const n = dict[lang].nav;
+  const links: [string, string][] = [
+    ['vetro', n.glass],
+    ['personaggi', n.characters],
+    ['segnalibri', n.bookmarks],
+    ['autrice', n.author],
+    ['contatti', n.contact]
+  ];
   return (
     <footer className="footer">
-      <div className="footer__big" aria-hidden="true">AlinneArt</div>
-      <div className="wrap footer__row">
-        <span>© {new Date().getFullYear()} AlinneArt · {t.rights}</span>
-        <div className="footer__links">
-          <a href={t.privacyUrl} target="_blank" rel="noreferrer">{t.privacy}</a>
-          <a href={t.cookieUrl} target="_blank" rel="noreferrer">{t.cookie}</a>
+      <div className="wrap footer__inner">
+        <img className="footer__logo" src="/logo.png" alt="AlinneArt" width="72" height="72" />
+        <div className="footer__big" aria-hidden="true">AlinneArt</div>
+        <nav className="footer__nav" aria-label="Footer">
+          {links.map(([id, label]) => (
+            <a key={id} href={`#${id}`} onClick={e => (e.preventDefault(), scrollToId(id))}>{label}</a>
+          ))}
+        </nav>
+        <div className="footer__social">
           <a href={social.instagram} target="_blank" rel="noreferrer" aria-label="Instagram"><IconInstagram /></a>
           <a href={social.tiktok} target="_blank" rel="noreferrer" aria-label="TikTok"><IconTikTok /></a>
-          <button onClick={() => scrollToId('top')}>{t.top} ↑</button>
         </div>
+        <div className="footer__legal">
+          <a href={t.privacyUrl} target="_blank" rel="noreferrer">{t.privacy}</a>
+          <span aria-hidden="true">·</span>
+          <a href={t.cookieUrl} target="_blank" rel="noreferrer">{t.cookie}</a>
+        </div>
+        <p className="footer__copy">© {new Date().getFullYear()} AlinneArt · {t.rights}</p>
+        <button className="footer__top" onClick={() => scrollToId('top')}>{t.top} ↑</button>
       </div>
     </footer>
   );
