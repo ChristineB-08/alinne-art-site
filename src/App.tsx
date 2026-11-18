@@ -368,13 +368,12 @@ function Glass({ lang }: { lang: Lang }) {
     () => {
       if (reducedMotion()) return;
       const el = root.current!;
-      const mm = gsap.matchMedia();
       // main video opens like a pane of glass
       gsap.fromTo(
-        '.glass__video',
-        { clipPath: 'inset(12% 10% 12% 10% round 28px)' },
+        '.glass__media',
+        { clipPath: 'inset(10% 8% 10% 8% round 24px)' },
         {
-          clipPath: 'inset(0% 0% 0% 0% round 28px)',
+          clipPath: 'inset(0% 0% 0% 0% round 24px)',
           ease: 'none',
           scrollTrigger: { trigger: '.glass__media', start: 'top 92%', end: 'center 55%', scrub: true }
         }
@@ -383,14 +382,6 @@ function Glass({ lang }: { lang: Lang }) {
         scale: 1,
         ease: 'none',
         scrollTrigger: { trigger: '.glass__media', start: 'top bottom', end: 'bottom top', scrub: true }
-      });
-      mm.add('(min-width: 900px)', () => {
-        gsap.fromTo('.glass__phone', { yPercent: 18, rotate: 6 }, {
-          yPercent: -8,
-          rotate: -2,
-          ease: 'none',
-          scrollTrigger: { trigger: '.glass__media', start: 'top bottom', end: 'bottom top', scrub: true }
-        });
       });
       // quote banner
       gsap.fromTo('.glass__banner', { clipPath: 'inset(8% 10% 8% 10% round 32px)' }, {
@@ -559,17 +550,66 @@ function Characters({ lang }: { lang: Lang }) {
             settle.restart(true);
           }
         });
-        const holder = root.current!.querySelector('.chars__rows')!;
-        const pause = () => loops.forEach(l => gsap.to(l, { timeScale: 0, duration: 0.4, overwrite: true }));
-        const play = () => loops.forEach(l => gsap.to(l, { timeScale: 1, duration: 0.6, overwrite: true }));
-        holder.addEventListener('pointerdown', pause);
-        holder.addEventListener('pointerup', play);
-        holder.addEventListener('pointercancel', play);
+        // finger swipe: dragging moves the strip, releasing keeps a little momentum
+        const holder = root.current!.querySelector<HTMLElement>('.chars__rows')!;
+        const row = rows[0];
+        const loop = loops[0];
+        const wrap = gsap.utils.wrap(0, 1);
+        const span = () => row.scrollWidth / 2;
+        let dragging = false;
+        let startX = 0;
+        let startP = 0;
+        let lastX = 0;
+        let lastT = 0;
+        let vel = 0;
+        let glide: gsap.core.Tween | null = null;
+        const down = (e: PointerEvent) => {
+          dragging = true;
+          glide?.kill();
+          startX = lastX = e.clientX;
+          lastT = performance.now();
+          startP = loop.progress();
+          vel = 0;
+          loop.pause();
+          holder.setPointerCapture(e.pointerId);
+          holder.classList.add('is-dragging');
+        };
+        const move = (e: PointerEvent) => {
+          if (!dragging) return;
+          loop.progress(wrap(startP - (e.clientX - startX) / span()));
+          const now = performance.now();
+          const dt = Math.max(now - lastT, 1);
+          vel = vel * 0.6 + ((e.clientX - lastX) / dt) * 0.4;
+          lastX = e.clientX;
+          lastT = now;
+        };
+        const up = () => {
+          if (!dragging) return;
+          dragging = false;
+          holder.classList.remove('is-dragging');
+          const m = { v: vel };
+          glide = gsap.to(m, {
+            v: 0,
+            duration: 1.1,
+            ease: 'power3.out',
+            onUpdate: () => loop.progress(wrap(loop.progress() - (m.v * 16) / span())),
+            onComplete: () => {
+              loop.timeScale(1);
+              loop.play();
+            }
+          });
+        };
+        holder.addEventListener('pointerdown', down);
+        holder.addEventListener('pointermove', move);
+        holder.addEventListener('pointerup', up);
+        holder.addEventListener('pointercancel', up);
         return () => {
           st.kill();
-          holder.removeEventListener('pointerdown', pause);
-          holder.removeEventListener('pointerup', play);
-          holder.removeEventListener('pointercancel', play);
+          glide?.kill();
+          holder.removeEventListener('pointerdown', down);
+          holder.removeEventListener('pointermove', move);
+          holder.removeEventListener('pointerup', up);
+          holder.removeEventListener('pointercancel', up);
         };
       });
       return () => mm.revert();
