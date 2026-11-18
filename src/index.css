@@ -740,8 +740,8 @@ button {
 
 .glass__grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-  gap: clamp(2rem, 4.5vw, 4.5rem);
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  gap: clamp(2rem, 4vw, 4rem);
   align-items: center;
 }
 
@@ -761,23 +761,20 @@ button {
 
 .glass__text .glass__lead {
   font-family: var(--serif);
-  font-size: clamp(1.35rem, 1.9vw, 1.7rem);
+  font-size: clamp(1.3rem, 1.7vw, 1.55rem);
   line-height: 1.35;
   color: var(--ink);
 }
 
 .glass__media {
-  display: grid;
-  /* 16:10 video next to a 9:16 phone: 1 : 0.3516 keeps both exactly the same height */
-  grid-template-columns: 1fr 0.3516fr;
-  gap: 14px;
-  align-items: start;
+  position: relative;
 }
 
 .glass__video {
   position: relative;
-  aspect-ratio: 16 / 10;
-  border-radius: 24px;
+  width: 70%;
+  aspect-ratio: 1 / 1;
+  border-radius: 26px;
   overflow: hidden;
   background: var(--ink);
   box-shadow: 0 40px 80px -40px rgba(60, 30, 10, 0.5);
@@ -789,14 +786,18 @@ button {
   object-fit: cover;
 }
 
+/* same height as the wide video, overlapping its right edge */
 .glass__phone {
-  position: relative;
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: auto;
   aspect-ratio: 9 / 16;
-  border-radius: 24px;
+  border-radius: 26px;
   overflow: hidden;
-  outline: 5px solid var(--ink);
-  outline-offset: -5px;
-  box-shadow: 0 40px 70px -30px rgba(40, 20, 10, 0.55);
+  border: 6px solid var(--ink);
+  box-shadow: -18px 30px 60px -20px rgba(40, 20, 10, 0.55);
   background: var(--ink);
 }
 
@@ -1622,13 +1623,16 @@ button {
   }
   .glass__media {
     width: 100%;
-    max-width: 600px;
+    max-width: 640px;
     margin: 0 auto;
-    gap: 10px;
   }
-  .glass__video,
+  .glass__video {
+    width: 70%;
+    border-radius: 18px;
+  }
   .glass__phone {
-    border-radius: 16px;
+    border-radius: 18px;
+    border-width: 4px;
   }
   .chars__rows {
     cursor: grab;
