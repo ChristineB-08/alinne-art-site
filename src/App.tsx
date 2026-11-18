@@ -368,35 +368,41 @@ function Glass({ lang }: { lang: Lang }) {
     () => {
       if (reducedMotion()) return;
       const el = root.current!;
-      // video banner opens like a pane of glass
+      const mm = gsap.matchMedia();
+      // main video opens like a pane of glass
       gsap.fromTo(
-        '.glass__banner',
-        { clipPath: 'inset(10% 12% 10% 12% round 32px)' },
+        '.glass__video',
+        { clipPath: 'inset(12% 10% 12% 10% round 28px)' },
         {
-          clipPath: 'inset(0% 0% 0% 0% round 32px)',
+          clipPath: 'inset(0% 0% 0% 0% round 28px)',
           ease: 'none',
-          scrollTrigger: { trigger: '.glass__banner', start: 'top 95%', end: 'center 55%', scrub: true }
+          scrollTrigger: { trigger: '.glass__media', start: 'top 92%', end: 'center 55%', scrub: true }
         }
       );
-      gsap.fromTo('.glass__banner video', { scale: 1.3 }, {
+      gsap.fromTo('.glass__video video', { scale: 1.3 }, {
         scale: 1,
         ease: 'none',
-        scrollTrigger: { trigger: '.glass__banner', start: 'top bottom', end: 'bottom top', scrub: true }
+        scrollTrigger: { trigger: '.glass__media', start: 'top bottom', end: 'bottom top', scrub: true }
       });
-      // centre phone + side cards
-      gsap.fromTo('.glass__phone', { y: 80, rotate: -4 }, {
-        y: -40,
-        rotate: 3,
+      mm.add('(min-width: 900px)', () => {
+        gsap.fromTo('.glass__phone', { yPercent: 18, rotate: 6 }, {
+          yPercent: -8,
+          rotate: -2,
+          ease: 'none',
+          scrollTrigger: { trigger: '.glass__media', start: 'top bottom', end: 'bottom top', scrub: true }
+        });
+      });
+      // quote banner
+      gsap.fromTo('.glass__banner', { clipPath: 'inset(8% 10% 8% 10% round 32px)' }, {
+        clipPath: 'inset(0% 0% 0% 0% round 32px)',
         ease: 'none',
-        scrollTrigger: { trigger: '.glass__trio', start: 'top bottom', end: 'bottom top', scrub: true }
+        scrollTrigger: { trigger: '.glass__banner', start: 'top 95%', end: 'center 60%', scrub: true }
       });
-      gsap.fromTo('.glass__card', { y: 60, autoAlpha: 0 }, {
-        y: 0,
-        autoAlpha: 1,
-        duration: 1.2,
-        ease: 'expo.out',
-        stagger: 0.15,
-        scrollTrigger: { trigger: '.glass__trio', start: 'top 75%' }
+      gsap.fromTo('.glass__banner img', { scale: 1.25, yPercent: -6 }, {
+        scale: 1,
+        yPercent: 6,
+        ease: 'none',
+        scrollTrigger: { trigger: '.glass__banner', start: 'top bottom', end: 'bottom top', scrub: true }
       });
       el.querySelectorAll('.squiggle').forEach(s => drawOnScroll(s, s, 'top 85%'));
       // process illustrations
@@ -425,30 +431,28 @@ function Glass({ lang }: { lang: Lang }) {
 
   return (
     <section className="section glass light" id="vetro" ref={root}>
-      <div className="wrap center-head">
-        <Kicker>{t.kicker}</Kicker>
-        <SplitText key={lang} text={t.title} tag="h2" className="h2" splitType="words" effect="blur" textAlign="center" />
-        <Squiggle className="center-squiggle" />
-      </div>
-
-      <div className="wrap glass__trio">
-        <article className="glass__card glass__card--left">
-          <span className="glass__card-num">I</span>
-          <p>{t.p1}</p>
-        </article>
-        <div className="glass__phone">
-          <video src="/video/video2.mp4" autoPlay muted loop playsInline preload="metadata" />
-          <span className="glass__shine" />
+      <div className="wrap glass__grid">
+        <div className="glass__text">
+          <Kicker>{t.kicker}</Kicker>
+          <SplitText key={lang} text={t.title} tag="h2" className="h2" splitType="words" effect="blur" textAlign="left" />
+          <Squiggle />
+          <p className="glass__lead" data-reveal>{t.p1}</p>
+          <p data-reveal>{t.p2}</p>
         </div>
-        <article className="glass__card glass__card--right">
-          <span className="glass__card-num">II</span>
-          <p>{t.p2}</p>
-        </article>
+        <div className="glass__media">
+          <div className="glass__video">
+            <video src="/video/video1.mp4" autoPlay muted loop playsInline preload="metadata" poster="/img/disegno-sul-vetro.jpg" />
+          </div>
+          <div className="glass__phone">
+            <video src="/video/video2.mp4" autoPlay muted loop playsInline preload="metadata" />
+            <span className="glass__shine" />
+          </div>
+        </div>
       </div>
 
       <div className="wrap">
         <div className="glass__banner">
-          <video src="/video/video1.mp4" autoPlay muted loop playsInline preload="metadata" poster="/img/disegno-sul-vetro.jpg" />
+          <img src="/img/disegno-sul-vetro.jpg" alt="" loading="lazy" />
           <div className="glass__banner-quote">
             <ScrollFloat key={lang} effect="float" splitBy="chars" textClassName="quote" animationDuration={1} ease="back.inOut(2)" scrollStart="top bottom" scrollEnd="center center" stagger={0.03}>
               {t.quote}
