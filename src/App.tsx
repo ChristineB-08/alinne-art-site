@@ -509,8 +509,6 @@ function Characters({ lang }: { lang: Lang }) {
   const t = dict[lang].characters;
   const root = useRef<HTMLElement>(null);
   const track = useRef<HTMLDivElement>(null);
-  const rowA = characters.slice(0, 6);
-  const rowB = characters.slice(6);
 
   useGSAP(
     () => {
@@ -544,7 +542,7 @@ function Characters({ lang }: { lang: Lang }) {
       mm.add('(max-width: 899px) and (prefers-reduced-motion: no-preference)', () => {
         const rows = gsap.utils.toArray<HTMLElement>('.chars__row');
         const loops = rows.map((row, i) =>
-          gsap.fromTo(row, { xPercent: i % 2 ? -50 : 0 }, { xPercent: i % 2 ? 0 : -50, duration: 38, ease: 'none', repeat: -1 })
+          gsap.fromTo(row, { xPercent: i % 2 ? -50 : 0 }, { xPercent: i % 2 ? 0 : -50, duration: 60, ease: 'none', repeat: -1 })
         );
         const settle = gsap.delayedCall(0.25, () => loops.forEach(l => gsap.to(l, { timeScale: 1, duration: 1.2, overwrite: true }))).pause();
         const st = ScrollTrigger.create({
@@ -606,11 +604,11 @@ function Characters({ lang }: { lang: Lang }) {
         </div>
 
         <div className="chars__rows">
-          {[rowA, rowB].map((row, r) => (
+          {[characters].map((row, r) => (
             <div className="chars__row" key={r}>
               {[...row, ...row].map((src, i) => (
                 <figure className="chars__mini" key={i}>
-                  <img src={src} alt={i < row.length ? `${t.alt} ${r * 6 + i + 1}` : ''} loading="lazy" />
+                  <img src={src} alt={i < row.length ? `${t.alt} ${r * 12 + i + 1}` : ''} loading="lazy" />
                 </figure>
               ))}
             </div>
