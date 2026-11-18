@@ -1655,8 +1655,23 @@ button {
   .author__stats {
     text-align: center;
   }
+  .author__text .kicker::after,
+  .contact__text .kicker::after {
+    content: '';
+    width: 28px;
+    height: 1px;
+    background: currentColor;
+  }
+  .author__text .h2,
+  .contact__text .h2 {
+    text-align: center !important;
+  }
   .contact__social {
     justify-content: center;
+  }
+  .contact__social span {
+    flex-basis: 100%;
+    text-align: center;
   }
 }
 
@@ -1685,6 +1700,13 @@ button {
   }
   .marquee {
     padding: 1.4rem 0;
+  }
+  .contact__social {
+    gap: 0.8rem 0.6rem;
+  }
+  .contact__social a {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.9rem;
   }
   .footer__nav {
     gap: 0.5rem 1.1rem;
